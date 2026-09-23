@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Bubble Shooter Pintar PAI Mobile</title>
+    <style>
+        :root {
+            --grass-bg: #4caf50;
+            --grass-dark: #2e7d32;
+            --primary: #1b5e20;
+            --card-bg: #ffffff;
+            --text: #1b2e1b;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: #e8f5e9;
+            color: var(--text);
+            padding: 10px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 500px;
+            margin: 0 auto;
+            background: var(--card-bg);
+            border-radius: 16px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+            padding: 12px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 10px;
+        }
+
+        header h1 {
+            color: var(--primary);
+            font-size: 1.2rem;
+        }
+
+        header p {
+            font-size: 0.8rem;
+            color: #555;
+        }
+
+        .setup-card {
+            background: #f1f8e9;
+            padding: 12px;
+            border-radius: 12px;
+            margin-bottom: 10px;
+        }
+
+        .setup-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .player-inputs {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            margin-top: 6px;
+        }
+
+        input, button {
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid #a5d6a7;
+            font-size: 0.95rem;
+        }
+
+        button {
+            background: var(--grass-dark);
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+            transition: 0.2s;
+            margin-top: 8px;
+        }
+
+        button:active {
+            background: var(--primary);
+        }
+
+        .turn-board {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #ded;
+            padding: 8px 12px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            font-weight: bold;
+            font-size: 0.85rem;
+        }
+
+        .canvas-container {
+            position: relative;
+            width: 100%;
+            margin: 0 auto 10px;
+            text-align: center;
+            touch-action: none;
+        }
+
+        canvas {
+            background: radial-gradient(circle, var(--grass-bg), var(--grass-dark));
+            border: 4px solid #1b4d1d;
+            border-radius: 12px;
+            box-shadow: inset 0 0 15px rgba(0,0,0,0.4);
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.6);
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            padding: 15px;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 15px;
+            border-radius: 12px;
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .bonus-badge {
+            background: #ffeb3b;
+            color: #d81b60;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 0.75rem;
+            display: inline-block;
+            margin-bottom: 8px;
+            animation: pulse 1s infinite alternate;
+            border: 2px solid #f57f17;
+        }
+
+        @keyframes pulse {
+            from { transform: scale(1); }
+            to { transform: scale(1.05); }
+        }
+
+        .options-list {
+            list-style: none;
+            margin: 10px 0;
+        }
+
+        .option-btn {
+            width: 100%;
+            text-align: left;
+            margin-bottom: 8px;
+            background: #f0f4f8;
+            color: #333;
+            padding: 10px;
+            font-size: 0.85rem;
+            line-height: 1.2;
+        }
+
+        .score-list {
+            margin-top: 10px;
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .player-score {
+            background: #e8f5e9;
+            padding: 4px 10px;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            border: 1px solid #a5d6a7;
+        }
+
+        footer {
+            text-align: center;
+            margin-top: 15px;
+            font-size: 0.85rem;
+            font-weight: bold;
+            color: var(--primary);
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>🫧 Bubble Shooter PAI Mobile 🫧</h1>
+        <p>Sentuh layar untuk membidik dan menembak!</p>
+    </header>
+
+    <div class="setup-card" id="setup-panel">
+        <label><strong>Jumlah Pemain:</strong></label>
+        <div class="setup-group">
+            <input type="number" id="player-count" min="1" max="6" value="2" onchange="generateNameInputs()">
+            
+            <div id="player-names-container" class="player-inputs"></div>
+
+            <button onclick="initGame()">Mulai Permainan</button>
+        </div>
+    </div>
+
+    <div id="game-panel" style="display: none;">
+        <div class="turn-board">
+            <span id="current-turn-display">Giliran: Pemain 1</span>
+            <span id="bubbles-left">Sisa: 100</span>
+        </div>
+
+        <div class="canvas-container">
+            <canvas id="gameCanvas" width="360" height="480"></canvas>
+        </div>
+
+        <h4 style="font-size: 0.9rem;">Skor Pemain:</h4>
+        <div class="score-list" id="score-board"></div>
+    </div>
+
+    <footer>
+        created by uzmila_sdn01karangasem
+    </footer>
+</div>
+
+<!-- Modal Pertanyaan -->
+<div class="modal" id="quiz-modal">
+    <div class="modal-content">
+        <div id="bonus-banner" class="bonus-badge" style="display: none;">
+            🌟 WARNA SAMA! BONUS SKOR 2X! 🌟
+        </div>
+        <h3 id="modal-title" style="font-size: 1.1rem;">Gelembung #</h3>
+        <p id="modal-question" style="margin-top: 8px; font-size: 0.9rem; font-weight: 600; text-align: left;"></p>
+        <div class="options-list" id="modal-options"></div>
+    </div>
+</div>
+
+<script>
+const rawData = [
+    // 100 Soal PAI
+    { q: "Berapa jumlah ayat dalam Surat Quraish?", a: ["4 ayat", "3 ayat", "5 ayat", "6 ayat"], c: 0 },
+    { q: "Surat Quraish tergolong kelompok surat...", a: ["Makkiyah", "Madaniyah", "Panjang", "Pendek"], c: 0 },
+    { q: "Mata pencaharian utama suku Quraish adalah...", a: ["Berdagang", "Bercocok tanam", "Beternak", "Berlayar"], c: 0 },
+    { q: "Dua musim perjalanan dagang Suku Quraish adalah...", a: ["Musim dingin dan musim panas", "Musim hujan dan kemarau", "Musim semi dan gugur", "Musim barat dan timur"], c: 0 },
+    { q: "'Li-īlāfi quraish' merupakan bunyi Surat Quraish ayat ke-...", a: ["1", "2", "3", "4"], c: 0 },
+    { q: "Suku Quraish pergi berdagang ke negeri Syam pada musim...", a: ["Panas", "Dingin", "Hujan", "Semi"], c: 0 },
+    { q: "Hukum Mim Mati bertemu huruf Mim dinamakan...", a: ["Idgham Mutamatsilain", "Ikhfa Syafawi", "Izhar Syafawi", "Iqlab"], c: 0 },
+    { q: "Hukum Mim Mati bertemu huruf Ba (ب) dinamakan...", a: ["Ikhfa Syafawi", "Izhar Syafawi", "Idgham Mislain", "Idgham Bighunnah"], c: 0 },
+    { q: "Mim Mati bertemu huruf selain Mim dan Ba dibaca...", a: ["Izhar Syafawi", "Ikhfa Syafawi", "Idgham Syafawi", "Iqlab"], c: 0 },
+    { q: "Pesan utama Surat Quraish adalah perintah menyembah Allah dan bersyukur atas nikmat...", a: ["Keamanan & kecukupan pangan", "Kekayaan emas", "Keturunan banyak", "Kemenangan perang"], c: 0 },
+    
+    // Bab 2
+    { q: "Arti dari Asmaulhusna Al-Ghaffar adalah...", a: ["Maha Pengampun", "Maha Mengagungkan", "Maha Petunjuk", "Maha Penyelamat"], c: 0 },
+    { q: "Arti dari Asmaulhusna Al-A'fuww adalah...", a: ["Maha Pemaaf", "Maha Pengampun", "Maha Bijaksana", "Maha Penyayang"], c: 0 },
+    { q: "Sifat Allah Yang Maha Memberi Petunjuk adalah...", a: ["Al-Hadi", "Al-Wahhab", "Al-Khaliq", "Al-Basit"], c: 0 },
+    { q: "Sifat Allah Yang Maha Memuliakan/Mengagungkan hamba-Nya adalah...", a: ["Al-Mu'izz", "Al-Mudzilla", "Al-Aziz", "Al-Kabir"], c: 0 },
+    { q: "Arti dari Asmaulhusna Al-Wahhid adalah...", a: ["Maha Tunggal / Maha Esa", "Maha Pertama", "Maha Kuasa", "Maha Tinggi"], c: 0 },
+    { q: "Meneladani sifat Al-Ghaffar dapat ditunjukkan dengan sikap...", a: ["Mudah memaafkan kesalahan teman", "Suka membanggakan diri", "Pintar petunjuk jalan", "Membalas kejahatan"], c: 0 },
+    { q: "Cara meneladani sifat Al-Hadi di sekolah adalah...", a: ["Memberikan petunjuk kebaikan", "Memaksa orang lain", "Minta diampuni", "Menghukum orang salah"], c: 0 },
+    { q: "Perbedaan Al-Ghaffar dan Al-A'fuww adalah...", a: ["Al-Ghaffar menutupi dosa, Al-A'fuww menghapus dosa", "Al-Ghaffar untuk orang kaya", "Sama saja", "Tidak ada beda"], c: 0 },
+    { q: "Nabi yang mendapat gelar Khatamul Anbiya' adalah...", a: ["Nabi Muhammad saw.", "Nabi Isa a.s.", "Nabi Musa a.s.", "Nabi Ibrahim a.s."], c: 0 },
+    { q: "Bacaan untuk memohon ampunan atas dosa adalah...", a: ["Istighfar", "Tasbih", "Tahmid", "Takbir"], c: 0 },
+
+    // Bab 3
+    { q: "Sikap saling menghargai dan menghormati perbedaan disebut...", a: ["Toleransi", "Tafakur", "Tawaduk", "Tawakal"], c: 0 },
+    { q: "Semboyan persatuan bangsa Indonesia adalah...", a: ["Bhinneka Tunggal Ika", "Tut Wuri Handayani", "Pancasila Sakti", "Garuda"], c: 0 },
+    { q: "Ayat yang menjelaskan manusia diciptakan berbangsa-bangsa agar saling mengenal adalah...", a: ["QS. Al-Hujurat ayat 13", "QS. Al-Ma'un ayat 1-3", "QS. Al-Kafirun ayat 1-6", "QS. Al-Ikhlas"], c: 0 },
+    { q: "Menghormati teman yang sedang beribadah adalah contoh...", a: ["Toleransi beragama", "Diskriminasi", "Fanatisme", "Egoisme"], c: 0 },
+    { q: "Batas toleransi dalam Islam adalah tidak boleh dalam hal...", a: ["Aqidah dan Ibadah", "Sosial & Ekonomi", "Kemanusiaan", "Gotong royong"], c: 0 },
+    { q: "Sikap menganggap budayanya paling unggul dibanding kaum lain disebut...", a: ["Etnosentrisme", "Toleransi", "Moderasi", "Sosialisasi"], c: 0 },
+    { q: "Manfaat utama menerapkan sikap saling menghargai adalah...", a: ["Terciptanya kerukunan", "Mendapat pujian guru", "Menjadi populer", "Menghilangkan perbedaan"], c: 0 },
+    { q: "Sikap terbaik saat teman menyampaikan pendapat berbeda adalah...", a: ["Mendengarkan & menghormati", "Memotong pembicaraan", "Ejek pendapatnya", "Tinggalkan ruangan"], c: 0 },
+    { q: "Landasan toleransi 'Lakum diinukum waliyadiin' terdapat dalam Surat...", a: ["Al-Kafirun ayat 6", "Al-Falaq ayat 1", "Al-Lahab ayat 3", "Al-Fatihah ayat 4"], c: 0 },
+    { q: "Menjunjung tinggi kemanusiaan tanpa membedakan suku dinamakan...", a: ["Ukhuwah Insaniyah", "Ukhuwah Islamiyah", "Ukhuwah Wathaniyah", "Soliter"], c: 0 },
+
+    // Bab 4
+    { q: "Harta tertentu yang wajib dikeluarkan seorang muslim disebut...", a: ["Zakat", "Infak", "Sedekah", "Hadiah"], c: 0 },
+    { q: "Zakat jiwa yang wajib dikeluarkan pada bulan Ramadan adalah...", a: ["Zakat Fitrah", "Zakat Mal", "Zakat Emas", "Zakat Profesi"], c: 0 },
+    { q: "Ukuran Zakat Fitrah per orang berupa makanan pokok adalah...", a: ["2,5 kg atau 3,5 liter", "1,0 kg atau 2,0 liter", "5,0 kg", "10 kg"], c: 0 },
+    { q: "Mengeluarkan harta sukarela tanpa batasan jumlah dinamakan...", a: ["Infak", "Zakat Mal", "Zakat Fitrah", "Pajak"], c: 0 },
+    { q: "Memberikan kebaikan berupa harta maupun non-materi (senyuman) disebut...", a: ["Sedekah", "Zakat", "Infak", "Hutang"], c: 0 },
+    { q: "Sebutan untuk orang yang berhak menerima zakat adalah...", a: ["Mustahik", "Muzakki", "Amil", "Munfiq"], c: 0 },
+    { q: "Sebutan untuk orang yang mengeluarkan zakat adalah...", a: ["Muzakki", "Mustahik", "Amil", "Gharim"], c: 0 },
+    { q: "Panitia pengelola dan pembagi zakat dinamakan...", a: ["Amil", "Mualaf", "Gharim", "Ibnu Sabil"], c: 0 },
+    { q: "Batas minimal jumlah harta wajib zakat dinamakan...", a: ["Nisab", "Haul", "Kadar", "Kaffarah"], c: 0 },
+    { q: "Golongan orang yang terlilit utang demi kebaikan disebut...", a: ["Gharim", "Mualaf", "Fakir", "Miskin"], c: 0 },
+
+    // Bab 5
+    { q: "Kota tujuan hijrah Nabi Muhammad saw. dari Makkah adalah...", a: ["Madinah (Yatsrib)", "Taif", "Habsyah", "Syam"], c: 0 },
+    { q: "Sebab utama Nabi dan sahabat berhijrah adalah...", a: ["Tekanan kafir Quraisy tinggi", "Mencari kekayaan", "Ingin berperang", "Permintaan raja"], c: 0 },
+    { q: "Penduduk asli Madinah yang menolong kaum Muhajirin disebut...", a: ["Kaum Ansar", "Kaum Muhajirin", "Kaum Quraish", "Kaum Aus"], c: 0 },
+    { q: "Sebutan bagi kaum muslimin yang ikut berhijrah dari Makkah adalah...", a: ["Kaum Muhajirin", "Kaum Ansar", "Kaum Khazraj", "Kaum Yahudi"], c: 0 },
+    { q: "Masjid pertama yang dibangun Nabi saw. saat perjalanan hijrah adalah...", a: ["Masjid Quba", "Masjid Nabawi", "Masjidil Haram", "Masjidil Aqsa"], c: 0 },
+    { q: "Sahabat yang mendampingi Nabi bersembunyi di Gua Tsur adalah...", a: ["Abu Bakar Ash-Siddiq", "Umar bin Khattab", "Ali bin Abi Thalib", "Utsman bin Affan"], c: 0 },
+    { q: "Sahabat yang menggantikan posisi tidur Nabi untuk mengelabuhi musuh adalah...", a: ["Ali bin Abi Thalib", "Umar bin Khattab", "Zaid bin Haritsah", "Bilal bin Rabah"], c: 0 },
+    { q: "Dokumen kesepakatan damai antarwarga di Madinah dinamakan...", a: ["Piagam Madinah", "Perjanjian Hudaibiyah", "Fathu Makkah", "Bai'at Aqabah"], c: 0 },
+    { q: "Nama kota Yatsrib diubah oleh Nabi Muhammad saw. menjadi...", a: ["Madinah Al-Munawwarah", "Makkah", "Baitul Maqdis", "Jeddah"], c: 0 },
+    { q: "Nilai teladan utama dari peristiwa Hijrah adalah...", a: ["Pantang menyerah & optimisme", "Menghindari teman", "Kekuasaan", "Pasrah tanpa usaha"], c: 0 },
+
+    // Bab 6
+    { q: "Surat Al-A'la merupakan surat urutan ke-...", a: ["87", "88", "89", "90"], c: 0 },
+    { q: "Arti dari kata 'Al-A'la' adalah...", a: ["Yang Maha Tinggi", "Maha Pengampun", "Hari Pembalasan", "Fajar"], c: 0 },
+    { q: "Surat Al-A'la terdiri dari...", a: ["19 ayat", "15 ayat", "20 ayat", "10 ayat"], c: 0 },
+    { q: "Pembacaan huruf Ra secara tebal dinamakan Ra...", a: ["Tafkhim", "Tarqiq", "Jawazul Wajhain", "Mad"], c: 0 },
+    { q: "Huruf Ra dibaca tipis (Tarqiq) apabila berharakat...", a: ["Kasrah", "Fathah", "Dammah", "Sukun"], c: 0 },
+    { q: "Huruf Ra dibaca tebal (Tafkhim) apabila berharakat...", a: ["Fathah atau Dammah", "Kasrah", "Kasrah murni", "Kasrah tain"], c: 0 },
+    { q: "Perintah di awal ayat Surat Al-A'la adalah...", a: ["Bertasbih menyucikan nama Allah", "Salat", "Zakat", "Puasa"], c: 0 },
+    { q: "Kehidupan akhirat menurut Surat Al-A'la bersifat...", a: ["Lebih baik & lebih kekal", "Sama dengan dunia", "Sementara", "Penuh cobaan"], c: 0 },
+    { q: "Dua nama Nabi yang disebut di akhir Surat Al-A'la adalah...", a: ["Ibrahim dan Musa", "Ismail dan Ishaq", "Adam dan Nuh", "Muhammad dan Isa"], c: 0 },
+    { q: "Orang yang beruntung menurut Surat Al-A'la adalah orang yang...", a: ["Menyucikan diri & ingat Allah", "Menumpuk harta", "Mengejar jabatan", "Mengabaikan akhirat"], c: 0 },
+
+    // Bab 7
+    { q: "Beriman kepada Hari Akhir merupakan rukun iman ke-...", a: ["5", "3", "4", "6"], c: 0 },
+    { q: "Hancurnya sebagian alam semesta atau kematian seseorang disebut Kiamat...", a: ["Sugra (Kecil)", "Kubra (Besar)", "Kulli", "Wustha"], c: 0 },
+    { q: "Hancurnya seluruh alam semesta secara total disebut Kiamat...", a: ["Kubra (Besar)", "Sugra (Kecil)", "Sedang", "Biasa"], c: 0 },
+    { q: "Malaikat peniup sangkakala tanda datangnya hari kiamat adalah...", a: ["Malaikat Israfil", "Malaikat Mikail", "Malaikat Izrail", "Malaikat Jibril"], c: 0 },
+    { q: "Hari dibangkitkannya manusia dari alam kubur dinamakan Yaumul...", a: ["Ba'ats", "Mahsyar", "Hisab", "Mizan"], c: 0 },
+    { q: "Padang luas tempat dikumpulkannya seluruh manusia setelah bangkit dinamakan Yaumul...", a: ["Mahsyar", "Jaza'", "Mizan", "Kholid"], c: 0 },
+    { q: "Hari perhitungan seluruh amal perbuatan manusia dinamakan Yaumul...", a: ["Hisab", "Mizan", "Ba'ats", "Jaza'"], c: 0 },
+    { q: "Hari penimbangan bobot kebaikan dan keburukan dinamakan Yaumul...", a: ["Mizan", "Hisab", "Ba'ats", "Jaza'"], c: 0 },
+    { q: "Alam pembatas antara dunia dan akhirat dinamakan alam...", a: ["Barzakh (Kubur)", "Ghaib", "Arwah", "Malakut"], c: 0 },
+    { q: "Hikmah utama beriman kepada Hari Akhir adalah...", a: ["Memperbanyak amal saleh", "Ketakutan tanpa usaha", "Menutup diri", "Menunda tobat"], c: 0 },
+
+    // Bab 8
+    { q: "Bersedia memaafkan kesalahan orang lain tanpa dendam disebut sifat...", a: ["Pemaaf", "Penyayang", "Pengasih", "Pemalu"], c: 0 },
+    { q: "Meminta maaf atas kesalahan menunjukkan sikap...", a: ["Tanggung jawab & sadar diri", "Kelemahan", "Kepasrahan", "Keserakahan"], c: 0 },
+    { q: "Kalimat tayibah untuk memohon maaf dan ampunan adalah...", a: ["Astaghfirullahal 'adzim", "Subhanallah", "Alhamdulillah", "Allahu Akbar"], c: 0 },
+    { q: "Nabi Muhammad saw. menunjukkan sifat pemaaf luar biasa saat didzalimi penduduk...", a: ["Taif", "Makkah", "Yaman", "Persia"], c: 0 },
+    { q: "Peristiwa pengampunan massal oleh Nabi saw. di Makkah dikenal dengan...", a: ["Fathu Makkah", "Perang Badar", "Perang Uhud", "Perjanjian Aqabah"], c: 0 },
+    { q: "Dampak buruk memelihara sifat dendam adalah...", a: ["Hati tidak tenang & berpenyakit", "Disukai teman", "Hidup bahagia", "Dapat pahala"], c: 0 },
+    { q: "Manfaat menjadi seorang pemaaf adalah...", a: ["Hati tenteram & dicintai Allah", "Dianggap lemah", "Rugi harta", "Menjadi sombong"], c: 0 },
+    { q: "Tindakan utama jika berbuat salah kepada teman adalah...", a: ["Segera minta maaf", "Pura-pura tidak tahu", "Cari alasan", "Lari dari masalah"], c: 0 },
+    { q: "Ciri orang yang kuat menurut Rasulullah adalah orang yang mampu...", a: ["Menahan amarahnya", "Menang berkelahi", "Lari cepat", "Menguasai harta"], c: 0 },
+    { q: "Memaafkan kesalahan teman harus dilakukan dengan...", a: ["Ikhlas karena Allah Swt.", "Terpaksa", "Ragu-ragu", "Pamer"], c: 0 },
+
+    // Bab 9
+    { q: "Segala sesuatu yang diperbolehkan dikonsumsi menurut syariat dinamakan...", a: ["Halal", "Haram", "Syubhat", "Makruh"], c: 0 },
+    { q: "Segala sesuatu yang dilarang keras dikonsumsi menurut syariat dinamakan...", a: ["Haram", "Halal", "Mubah", "Sunah"], c: 0 },
+    { q: "Makanan yang belum jelas status halal atau haramnya disebut...", a: ["Syubhat", "Halal", "Haram", "Makruh"], c: 0 },
+    { q: "Contoh makanan yang haram karena zatnya (Haram Aini) adalah...", a: ["Daging babi & darah", "Nasi goreng beli", "Roti pemberian", "Ikan laut"], c: 0 },
+    { q: "Makanan halal yang didapat dari cara mencuri hukumnya menjadi...", a: ["Haram Sababi", "Halal", "Makruh", "Mubah"], c: 0 },
+    { q: "Dua jenis bangkai hewan yang halal dikonsumsi adalah bangkai...", a: ["Ikan dan Belalang", "Ayam dan Sapi", "Kambing dan Burung", "Kelinci"], c: 0 },
+    { q: "Dua organ gumpalan darah yang halal dikonsumsi adalah...", a: ["Hati dan Limpa", "Jantung dan Paru", "Ginjal dan Usus", "Otak dan Daging"], c: 0 },
+    { q: "Minuman memabukkan yang dilarang keras dalam Islam dinamakan...", a: ["Khamar", "Sirup", "Susu", "Jus"], c: 0 },
+    { q: "Dampak negatif mengonsumsi makanan haram adalah...", a: ["Doa tidak dikabulkan", "Tubuh kuat", "Pikiran cerdas", "Dapat pahala"], c: 0 },
+    { q: "Manfaat mengonsumsi makanan halal dan baik (Thayyib) adalah...", a: ["Kesehatan terjaga & doa dikabulkan", "Sering sakit", "Malas ibadah", "Hati keras"], c: 0 },
+
+    // Bab 10
+    { q: "Khulafaur Rasyidin memiliki arti...", a: ["Pemimpin mendapat petunjuk", "Raja berkuasa", "Pahlawan perang", "Penerima wahyu"], c: 0 },
+    { q: "Jumlah sahabat yang tergolong Khulafaur Rasyidin ada...", a: ["4 orang", "3 orang", "5 orang", "10 orang"], c: 0 },
+    { q: "Khalifah pertama pengganti Rasulullah saw. adalah...", a: ["Abu Bakar Ash-Siddiq", "Umar bin Khattab", "Utsman bin Affan", "Ali bin Abi Thalib"], c: 0 },
+    { q: "Khalifah yang mendapat gelar 'Al-Faruq' adalah...", a: ["Umar bin Khattab", "Abu Bakar Ash-Siddiq", "Utsman bin Affan", "Ali bin Abi Thalib"], c: 0 },
+    { q: "Pembukuan mushaf Al-Qur'an pertama kali dilakukan pada masa khalifah...", a: ["Abu Bakar Ash-Siddiq", "Umar bin Khattab", "Utsman bin Affan", "Ali bin Abi Thalib"], c: 0 },
+    { q: "Gelar 'Dzun Nurain' (Pemilik Dua Cahaya) dimiliki oleh khalifah...", a: ["Utsman bin Affan", "Ali bin Abi Thalib", "Abu Bakar Ash-Siddiq", "Umar bin Khattab"], c: 0 },
+    { q: "Khalifah yang terkenal sangat cerdas serta merupakan menantu Nabi saw. adalah...", a: ["Ali bin Abi Thalib", "Utsman bin Affan", "Umar bin Khattab", "Abu Bakar Ash-Siddiq"], c: 0 },
+    { q: "Penentuan kalender Hijriah dimulai pada masa pemerintahan khalifah...", a: ["Umar bin Khattab", "Abu Bakar Ash-Siddiq", "Utsman bin Affan", "Ali bin Abi Thalib"], c: 0 },
+    { q: "Penggandaan standar mushaf Al-Qur'an (Mushaf Usmani) dilakukan oleh khalifah...", a: ["Utsman bin Affan", "Abu Bakar Ash-Siddiq", "Umar bin Khattab", "Ali bin Abi Thalib"], c: 0 },
+    { q: "Gelar 'Ash-Siddiq' milik Abu Bakar r.a. berarti...", a: ["Orang yang membenarkan Isra Mikraj", "Pemberani perang", "Pemimpin adil", "Pemilik dua cahaya"], c: 0 }
+];
+
+const BUBBLE_COLORS = [
+    { name: 'pink', main: '#e91e63', stroke: '#880e4f', text: '#ffffff' },
+    { name: 'purple', main: '#9c27b0', stroke: '#4a148c', text: '#ffffff' },
+    { name: 'blue', main: '#2196f3', stroke: '#0d47a1', text: '#ffffff' },
+    { name: 'cyan', main: '#00bcd4', stroke: '#006064', text: '#ffffff' },
+    { name: 'green', main: '#4caf50', stroke: '#1b5e20', text: '#ffffff' },
+    { name: 'yellow', main: '#ffeb3b', stroke: '#f57f17', text: '#333333' },
+    { name: 'orange', main: '#ff9800', stroke: '#e65100', text: '#ffffff' },
+    { name: 'red', main: '#ff5722', stroke: '#bf360c', text: '#ffffff' }
+];
+
+const questionsData = rawData.map(item => {
+    let optionsWithIndex = item.a.map((optionText, index) => ({
+        text: optionText,
+        isCorrect: index === item.c
+    }));
+
+    for (let i = optionsWithIndex.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [optionsWithIndex[i], optionsWithIndex[j]] = [optionsWithIndex[j], optionsWithIndex[i]];
+    }
+
+    return {
+        q: item.q,
+        a: optionsWithIndex.map(o => o.text),
+        c: optionsWithIndex.findIndex(o => o.isCorrect)
+    };
+});
+
+let canvas, ctx;
+let players = [];
+let currentTurn = 0;
+let remainingBubbles = 100;
+let activeHitIndex = null;
+let isDoubleBonus = false;
+
+const RADIUS = 14;
+let gridBubbles = [];
+let bullet = null;
+let canonAngle = -Math.PI / 2;
+let isShooting = false;
+
+function generateNameInputs() {
+    const count = parseInt(document.getElementById('player-count').value) || 1;
+    const container = document.getElementById('player-names-container');
+    container.innerHTML = '';
+
+    for (let i = 0; i < count; i++) {
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.placeholder = `Nama Pemain ${i + 1}`;
+        input.id = `player-name-${i}`;
+        input.value = `Pemain ${i + 1}`;
+        container.appendChild(input);
+    }
+}
+
+window.onload = generateNameInputs;
+
+function getRandomColor() {
+    return BUBBLE_COLORS[Math.floor(Math.random() * BUBBLE_COLORS.length)];
+}
+
+function initGame() {
+    const count = parseInt(document.getElementById('player-count').value) || 1;
+    players = [];
+
+    for (let i = 0; i < count; i++) {
+        const nameInput = document.getElementById(`player-name-${i}`);
+        const name = nameInput && nameInput.value.trim() !== '' ? nameInput.value.trim() : `Pemain ${i + 1}`;
+        players.push({ id: i + 1, name: name, score: 0 });
+    }
+
+    currentTurn = 0;
+    remainingBubbles = 100;
+
+    document.getElementById('setup-panel').style.display = 'none';
+    document.getElementById('game-panel').style.display = 'block';
+
+    canvas = document.getElementById('gameCanvas');
+    ctx = canvas.getContext('2d');
+
+    setupGrid();
+    setupBullet();
+
+    // Event Touch/Mouse HP
+    canvas.addEventListener('touchmove', handleTouch, { passive: false });
+    canvas.addEventListener('touchstart', handleTouch, { passive: false });
+    canvas.addEventListener('touchend', shoot, { passive: false });
+    canvas.addEventListener('mousemove', trackAim);
+    canvas.addEventListener('click', shoot);
+
+    updateBoard();
+    requestAnimationFrame(gameLoop);
+}
+
+function setupGrid() {
+    gridBubbles = [];
+    let cols = 10;
+    let startX = 22;
+    let startY = 22;
+
+    for (let i = 0; i < 100; i++) {
+        let col = i % cols;
+        let row = Math.floor(i / cols);
+        let x = startX + col * (RADIUS * 2 + 5);
+        let y = startY + row * (RADIUS * 2 + 5);
+
+        gridBubbles.push({
+            id: i,
+            x: x,
+            y: y,
+            active: true,
+            color: getRandomColor()
+        });
+    }
+}
+
+function setupBullet() {
+    bullet = {
+        x: canvas.width / 2,
+        y: canvas.height - 25,
+        vx: 0,
+        vy: 0,
+        speed: 9,
+        color: getRandomColor()
+    };
+}
+
+function handleTouch(e) {
+    e.preventDefault();
+    if (isShooting) return;
+    const touch = e.touches[0];
+    const rect = canvas.getBoundingClientRect();
+    const touchX = (touch.clientX - rect.left) * (canvas.width / rect.width);
+    const touchY = (touch.clientY - rect.top) * (canvas.height / rect.height);
+
+    let dx = touchX - bullet.x;
+    let dy = touchY - bullet.y;
+    canonAngle = Math.atan2(dy, dx);
+
+    if (canonAngle > -0.2) canonAngle = -0.2;
+    if (canonAngle < -Math.PI + 0.2) canonAngle = -Math.PI + 0.2;
+}
+
+function trackAim(e) {
+    if (isShooting) return;
+    const rect = canvas.getBoundingClientRect();
+    const mouseX = (e.clientX - rect.left) * (canvas.width / rect.width);
+    const mouseY = (e.clientY - rect.top) * (canvas.height / rect.height);
+
+    let dx = mouseX - bullet.x;
+    let dy = mouseY - bullet.y;
+    canonAngle = Math.atan2(dy, dx);
+
+    if (canonAngle > -0.2) canonAngle = -0.2;
+    if (canonAngle < -Math.PI + 0.2) canonAngle = -Math.PI + 0.2;
+}
+
+function shoot(e) {
+    if (e) e.preventDefault();
+    if (isShooting) return;
+    isShooting = true;
+    bullet.vx = Math.cos(canonAngle) * bullet.speed;
+    bullet.vy = Math.sin(canonAngle) * bullet.speed;
+}
+
+function updateBoard() {
+    document.getElementById('current-turn-display').innerText = `Giliran: ${players[currentTurn].name}`;
+    document.getElementById('bubbles-left').innerText = `Sisa: ${remainingBubbles}`;
+
+    const scoreBoard = document.getElementById('score-board');
+    scoreBoard.innerHTML = '';
+    players.forEach(p => {
+        const badge = document.createElement('div');
+        badge.className = 'player-score';
+        badge.innerText = `${p.name}: ${p.score} Poin`;
+        scoreBoard.appendChild(badge);
+    });
+}
+
+function gameLoop() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    gridBubbles.forEach(b => {
+        if (b.active) {
+            ctx.beginPath();
+            ctx.arc(b.x, b.y, RADIUS, 0, Math.PI * 2);
+            let grad = ctx.createRadialGradient(b.x - 3, b.y - 3, 1, b.x, b.y, RADIUS);
+            grad.addColorStop(0, '#ffffff');
+            grad.addColorStop(1, b.color.main);
+            ctx.fillStyle = grad;
+            ctx.fill();
+            ctx.strokeStyle = b.color.stroke;
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+
+            ctx.fillStyle = b.color.text;
+            ctx.font = 'bold 9px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(b.id + 1, b.x, b.y);
+        }
+    });
+
+    if (isShooting) {
+        bullet.x += bullet.vx;
+        bullet.y += bullet.vy;
+
+        if (bullet.x - RADIUS <= 0 || bullet.x + RADIUS >= canvas.width) {
+            bullet.vx *= -1;
+        }
+
+        if (bullet.y - RADIUS <= 0) {
+            resetBullet();
+        }
+
+        for (let b of gridBubbles) {
+            if (b.active) {
+                let dist = Math.hypot(bullet.x - b.x, bullet.y - b.y);
+                if (dist < RADIUS * 2) {
+                    activeHitIndex = b.id;
+                    isDoubleBonus = (bullet.color.name === b.color.name);
+
+                    openQuestion(b.id);
+                    resetBullet();
+                    break;
+                }
+            }
+        }
+    }
+
+    ctx.save();
+    ctx.translate(canvas.width / 2, canvas.height - 25);
+    ctx.rotate(canonAngle);
+    ctx.fillStyle = '#333';
+    ctx.fillRect(0, -5, 30, 10);
+    ctx.restore();
+
+    ctx.beginPath();
+    ctx.arc(bullet.x, bullet.y, RADIUS, 0, Math.PI * 2);
+    let bGrad = ctx.createRadialGradient(bullet.x - 3, bullet.y - 3, 1, bullet.x, bullet.y, RADIUS);
+    bGrad.addColorStop(0, '#ffffff');
+    bGrad.addColorStop(1, bullet.color.main);
+    ctx.fillStyle = bGrad;
+    ctx.fill();
+    ctx.strokeStyle = bullet.color.stroke;
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    requestAnimationFrame(gameLoop);
+}
+
+function resetBullet() {
+    isShooting = false;
+    bullet.x = canvas.width / 2;
+    bullet.y = canvas.height - 25;
+    bullet.vx = 0;
+    bullet.vy = 0;
+    bullet.color = getRandomColor();
+}
+
+function openQuestion(index) {
+    const item = questionsData[index];
+
+    document.getElementById('modal-title').innerText = `Gelembung #${index + 1}`;
+    document.getElementById('modal-question').innerText = item.q;
+
+    const bonusBanner = document.getElementById('bonus-banner');
+    if (isDoubleBonus) {
+        bonusBanner.style.display = 'inline-block';
+    } else {
+        bonusBanner.style.display = 'none';
+    }
+
+    const optionsContainer = document.getElementById('modal-options');
+    optionsContainer.innerHTML = '';
+
+    item.a.forEach((opt, idx) => {
+        const btn = document.createElement('button');
+        btn.className = 'option-btn';
+        btn.innerText = `${String.fromCharCode(65 + idx)}. ${opt}`;
+        btn.onclick = () => handleAnswer(idx);
+        optionsContainer.appendChild(btn);
+    });
+
+    document.getElementById('quiz-modal').style.display = 'flex';
+}
+
+function handleAnswer(selectedIndex) {
+    document.getElementById('quiz-modal').style.display = 'none';
+
+    const item = questionsData[activeHitIndex];
+    if (selectedIndex === item.c) {
+        let addedScore = isDoubleBonus ? 2 : 1;
+        let bonusText = isDoubleBonus ? "🎉 WARNA SAMA! BONUS 2 POIN!" : "+1 POIN!";
+        
+        alert(`BENAR! ${players[currentTurn].name} meletuskan Gelembung #${activeHitIndex + 1}!\n\n${bonusText}`);
+        
+        players[currentTurn].score += addedScore;
+        gridBubbles[activeHitIndex].active = false;
+        remainingBubbles--;
+    } else {
+        alert(`SALAH! Gelembung #${activeHitIndex + 1} tidak meletus.`);
+    }
+
+    if (remainingBubbles === 0) {
+        finishGame();
+    } else {
+        currentTurn = (currentTurn + 1) % players.length;
+        updateBoard();
+    }
+}
+
+function finishGame() {
+    let winner = players.reduce((max, p) => p.score > max.score ? p : max, players[0]);
+    alert(`Permainan Selesai!\n\nPemenangnya adalah ${winner.name} dengan ${winner.score} poin!`);
+}
+</script>
+
+</body>
+</html>
